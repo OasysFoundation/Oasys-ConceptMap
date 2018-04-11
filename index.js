@@ -51,16 +51,17 @@ const Node = class { //saves in object to have memory off variables (assignment 
                 x: 200,
                 y: 200,
                 size: 50,
-
+                normX: 0,
+                normY: 0
             },
             siblings: [],
             children: [],
             parents: [],
+            paths: 0
         }
         //presets go on this and parameters override presets
         Object.assign(this, presets, parameters)
     }
-
     setLevel(level) {
         //always pick heighest level --> A => C, A=> B => C ... C ==> level 3 instead of 2
         if (level > this.level) {
@@ -76,27 +77,29 @@ const Node = class { //saves in object to have memory off variables (assignment 
     }
 
     allChildDo(func, num) {
-        /*    if (num > this.level) {
-                this.level = num;
-            }
-            else {
-                return
-            }
-            let l = this.level;
-            l++;*/
-
         this[func](num);
-
         console.log("childs", this.name, this.children)
-
-        /* const isChildrenKnowMe = this.children
-             .map(c => c.parents.includes(this))
-             .filter(v => v == false).length > 0;*/
 
         if (this.children.length < 1) {
             return
         }
         this.children.forEach(c => c.allChildDo("setLevel", 1 + num))
+    }
+    makePath() {
+        const that = this;
+        const group = container.group();
+        this.children.forEach(function (target) {
+            group.path().attr('d', pathRound({from: that.view, to: target.view})) //sigmoidLine({from: node, to: target}))
+                .attr('stroke-width', 7)
+                .attr('stroke-opacity', 0.8)
+                .attr('stroke', `url(#strokeCol)` )
+                .attr('fill', 'transparent')
+
+            that.paths++;
+            if (that.paths >= that.children.length) {
+                return
+            }
+        })
     }
 };
 
@@ -135,25 +138,7 @@ const Graph = class {
     }
 
     drawPaths() {
-
-        this.layers[0].forEach(layer => {
-//            group.rect(100, 100).fill('#f09')//path(sigmoidLine({from:node, to:target})) //sigmoidLine({from: node, to: target}))
-
-            console.log("container", container);
-            layer.forEach(node => {
-
-                console.log('node', node, "child", node.children);
-                if (node.children.length > 0) {
-                    const group = container.group();
-                    node.children.forEach(function (target) {
-                        group.path().attr('d', sigmoidLine({from: node.view, to: target.view})) //sigmoidLine({from: node, to: target}))
-                        .attr('style', 'stroke-width', 4)
-                        .style('style', 'stroke-opacity', 0.8)
-                    })
-                }
-            })
-        })
-
+        this.nodes.forEach(n=> n.makePath())
     }
 
     calcHierachy() {
@@ -176,6 +161,7 @@ const Graph = class {
             }
             this.layers[0][n.level].push(n)
         });
+
         console.log('layers, ', this.layers)
 
     }
@@ -188,6 +174,9 @@ const Graph = class {
                 n.view.x = i / layerCount;
                 const nodesInLayer = that.layers[0][i].length;
                 n.view.y = (1 + j) * (1 / (nodesInLayer + 1)); //if 2 els ==> first at 1/3 second at 2/3
+
+                n.view.normX = n.view.x * window.innerWidth + 100;
+                n.view.normY = n.view.y * window.innerHeight;
             })
         }
     }
@@ -200,67 +189,67 @@ const e = G.getNode('Energy');
 
 
 const circles = G.nodes.map(d => container.circle(40)
-    .attr("cx", d.view.x * window.innerWidth + 100)
-    .attr("cy", d.view.y * window.innerHeight)
+    .attr("cx", d.view.normX)
+    .attr("cy", d.view.normY)
     .attr('fill', container.gradient('linear', function (stop) {
         stop.at(0, PASTELLHEX[Math.floor(Math.random() * PASTELLHEX.length)], 1)
         stop.at(1, PASTELLHEX[Math.floor(Math.random() * PASTELLHEX.length)], 1)
     }))
 )
 
-// const texts = G.nodes.map(d => container.text(d.name)
-//     .attr("x", d.view.x * window.innerWidth + 80)
-//     .attr("y", d.view.y * window.innerHeight + 15)
-//     .attr('background','red'))
-// .addClass('circles'));
-
 
 const gradBlueDark = container.gradient('linear', function (stop) {
     stop.at(0, '#3193ff', 0.9)
     stop.at(1, 'grey', 0.9)
-})
+}).attr('id', "strokeCol")//fuuuuuckkk youuuu
+
 
 let textBackgrounds = G.nodes
     .map(d => container.rect(Math.sqrt(d.name.length) * 30, 20)
-        .attr("x", d.view.x * window.innerWidth + 80)
-        .attr("y", d.view.y * window.innerHeight + 15))
+        .attr("x", d.view.normX)
+        .attr("y", d.view.normY))
 
 textBackgrounds.map(e => e.fill(gradBlueDark));
 textBackgrounds.map(e => e.addClass('textBG'))
 
 let textViews = G.nodes.map(d => {
-
-    return container.text(d.name)
+    let c = container.text(d.name)
         .font(
-            {
-                family: 'Helvetica',
-                size: 12,
-                fontWeight: "bold"
-            })
-        .attr({fill: "white"})
-        .attr("x", d.view.x * window.innerWidth + 90)
-        .attr("y", d.view.y * window.innerHeight + 15)
+        {
+            family: 'Helvetica',
+            size: 12,
+            fontWeight: "bold"
+        })
+        .attr("fill", "white")
+        .attr("x", d.view.normX)
+        .attr("y", d.view.normY);
+
+    return c;
+
 });
 
+function pathRound(d) {
+    const f = Object.assign({}, d.from);
+    const t = Object.assign({}, d.to);
 
-function sigmoidLine(d) { // topNode = parent, utop...
-    const t = Object.assign({}, d.from);
-    const f = Object.assign({},d.to);
 
-    t.x *= window.innerWidth;
-    t.y *= window.innerHeight;
-    f.x *= window.innerHeight;
-    f.y *= window.innerHeight;
+    f.x = f.normX;
+    f.y = f.normY;
 
-    if (f.y === t.y) {
-        return `M${f.x},${f.y} L${t.x},${t.y - 0.1}`
-    } //path invisible bug
-    //TODO always start the path with the parent --> child
-    return "M" + f.x + "," + f.y
-        + "C" + (f.x + t.x) / 2 + "," + f.y
-        + " " + (f.x + t.x) / 1.9 + "," + t.y
-        + " " + t.x + "," + t.y // * (1 + (-0.5/20 + Math.random()/20))
-};
+    t.x = t.normX;
+    t.y = t.normY;
+
+    console.log("pos", t, f + " " + d)
+
+    const dX = t.x - f.x;
+    const dY = t.y - f.y;
+
+    return `M ${f.x} ${f.y} Q ${f.x + dX/4} ${f.y - dX/10}, ${f.x + dX/2} ${f.y} T ${t.x} ${t.y}`
+
+    // return `M ${f.x} ${f.y} Q ${f.x + dX/4} ${f.y - 50}, ${f.x + dX/2} ${f.y} T ${t.x} ${t.y}`
+    //https://developer.mozilla.org/en-US/docs/Web/SVG/Tutorial/Paths
+    //"M10 80 Q 52.5 10, 95 80 T 180 80"
+}
 
 
 console.log('Energy', e)
