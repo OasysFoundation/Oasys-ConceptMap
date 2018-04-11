@@ -2,6 +2,8 @@ import SVG from "svg.js"
 
 console.log("SVG", SVG);
 
+const PASTELLHEX = ['#a7ff74', '#ffe8e8', '#81b4ff', '#ffa9a9', '#f7ffa6', '#c5bbff', '#69faff', '#ffd29b', '#98ffc0'];
+
 const container = new SVG("container").size(window.innerWidth, window.innerHeight);
 
 const data = [
@@ -17,7 +19,7 @@ const data = [
     },
     {
         name: 'Heat',
-        children: ['Energy']
+        children: ['Energy', 'Friction']
 
     },
     {
@@ -33,6 +35,10 @@ const data = [
         name: 'Graphing',
         tag: 'toolbox',
         children: [] //'Plotting in 2D'
+    },
+    {
+        name: "Friction",
+        children: ["Entropy"]
     }
 ]
 const Node = class { //saves in object to have memory off variables (assignment by reference)...
@@ -97,7 +103,8 @@ const Node = class { //saves in object to have memory off variables (assignment 
 const nodes = data.map(d => new Node({name: d.name, children: d.children}))
 
 const Graph = class {
-    constructor(nodes) {
+    constructor(nodes, svg = container) {
+        this.svg = svg;
         this.nodes = nodes;
         this.injectDependencies();
     }
@@ -128,6 +135,24 @@ const Graph = class {
     }
 
     drawPaths() {
+
+        this.layers[0].forEach(layer => {
+//            group.rect(100, 100).fill('#f09')//path(sigmoidLine({from:node, to:target})) //sigmoidLine({from: node, to: target}))
+
+            console.log("container", container);
+            layer.forEach(node => {
+
+                console.log('node', node, "child", node.children);
+                if (node.children.length > 0) {
+                    const group = container.group();
+                    node.children.forEach(function (target) {
+                        group.path().attr('d', sigmoidLine({from: node.view, to: target.view})) //sigmoidLine({from: node, to: target}))
+                        .attr('style', 'stroke-width', 4)
+                        .style('style', 'stroke-opacity', 0.8)
+                    })
+                }
+            })
+        })
 
     }
 
@@ -173,14 +198,69 @@ window.G = G;
 console.log(G.nodes);
 const e = G.getNode('Energy');
 
+
 const circles = G.nodes.map(d => container.circle(40)
     .attr("cx", d.view.x * window.innerWidth + 100)
-    .attr("cy", d.view.y * window.innerHeight))
+    .attr("cy", d.view.y * window.innerHeight)
+    .attr('fill', container.gradient('linear', function (stop) {
+        stop.at(0, PASTELLHEX[Math.floor(Math.random() * PASTELLHEX.length)], 1)
+        stop.at(1, PASTELLHEX[Math.floor(Math.random() * PASTELLHEX.length)], 1)
+    }))
+)
 
-const texts = G.nodes.map(d => container.text(d.name)
-    .attr("x", d.view.x * window.innerWidth + 80)
-    .attr("y", d.view.y * window.innerHeight + 15))
+// const texts = G.nodes.map(d => container.text(d.name)
+//     .attr("x", d.view.x * window.innerWidth + 80)
+//     .attr("y", d.view.y * window.innerHeight + 15)
+//     .attr('background','red'))
 // .addClass('circles'));
+
+
+const gradBlueDark = container.gradient('linear', function (stop) {
+    stop.at(0, '#3193ff', 0.9)
+    stop.at(1, 'grey', 0.9)
+})
+
+let textBackgrounds = G.nodes
+    .map(d => container.rect(Math.sqrt(d.name.length) * 30, 20)
+        .attr("x", d.view.x * window.innerWidth + 80)
+        .attr("y", d.view.y * window.innerHeight + 15))
+
+textBackgrounds.map(e => e.fill(gradBlueDark));
+textBackgrounds.map(e => e.addClass('textBG'))
+
+let textViews = G.nodes.map(d => {
+
+    return container.text(d.name)
+        .font(
+            {
+                family: 'Helvetica',
+                size: 12,
+                fontWeight: "bold"
+            })
+        .attr({fill: "white"})
+        .attr("x", d.view.x * window.innerWidth + 90)
+        .attr("y", d.view.y * window.innerHeight + 15)
+});
+
+
+function sigmoidLine(d) { // topNode = parent, utop...
+    const t = Object.assign({}, d.from);
+    const f = Object.assign({},d.to);
+
+    t.x *= window.innerWidth;
+    t.y *= window.innerHeight;
+    f.x *= window.innerHeight;
+    f.y *= window.innerHeight;
+
+    if (f.y === t.y) {
+        return `M${f.x},${f.y} L${t.x},${t.y - 0.1}`
+    } //path invisible bug
+    //TODO always start the path with the parent --> child
+    return "M" + f.x + "," + f.y
+        + "C" + (f.x + t.x) / 2 + "," + f.y
+        + " " + (f.x + t.x) / 1.9 + "," + t.y
+        + " " + t.x + "," + t.y // * (1 + (-0.5/20 + Math.random()/20))
+};
 
 
 console.log('Energy', e)
