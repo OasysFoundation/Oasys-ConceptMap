@@ -11,7 +11,9 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "parcel-bundler": "^1.7.0"
+    "parcel-bundler": "^1.7.0",
+    "svg.js": "^2.6.4",
+    "svgjs": "^2.6.2"
   },
   "devDependencies": {},
   "description": ""
