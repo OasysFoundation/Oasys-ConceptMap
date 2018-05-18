@@ -4,45 +4,16 @@ import {formatNodes, getObjByProp} from './mUtils'
 import graphData from "./physics.json"
 import {nodes as exampleNodes, edges as exampleEdges} from "./exampleData"
 
+const DATA = graphData.data;
+console.log(DATA.nodes);
+let myNodes = formatNodes(DATA.nodes);
 
-
-
-const makeDiv = function (items) {
-    let html = "";
-    if (items.length) {
-        items.forEach(i => {html += "<span>" + i + " | </span>"})
-    }
-    return html
-}
-
-console.log(graphData.data.nodes);
-let myNodes = formatNodes(graphData.data.nodes);
-
+//dirty hack to have textPadding
 myNodes.forEach(m => {
-    const rnd =m.label.split(" ").length;
-    if (rnd == 2) {
-        m.group = 2;
-    }
-    else if (rnd == 1) {
-        m.group = 1
-    }
-    else {m.group = 0}
+    m.label = " " + m.label + " "
 })
 
-
-
-
-
-
-//hasIn //hasOut
-
-
-const links = graphData.data.links;
-
-const getLinksForID = function(id, links) {
-    return links.filter(e => (e.from == id || e.to == id));
-}
-
+const links = DATA.links;
 const hasInOut = function(nodeId, links) {
     return (links.filter(e => e.from == nodeId).length > 0 && links.filter(e=> e.to==nodeId).length > 0)
 }
@@ -74,14 +45,20 @@ const options = {
     nodes: {
         shape: 'dot',
         size: 30,
+        // color: "white",
         font: {
             size: 14,
-            color: '#ffffff'
+            color: '#ffe8e8',
+            background: "#444444"
         },
-        borderWidth: 2
-    },
-    layout: {
-        // randomSeed: 475928
+       color: {
+           highlight: {
+               background: "#ff8647",
+               border: "#ff4f48"
+           }
+       },
+
+        borderWidth: 6
     },
     edges: {
         width: 2,
@@ -90,18 +67,28 @@ const options = {
         }
     },
     groups: {
-        0: {
-            shape: "triangle",
-            color: "purple"
-        },
-        1: {
+        "minor" :{
             shape: "diamond",
-            color: "yellow"
+            size: 15,
+            color: {
+                border: "#9092ff",
+                background: "#ffcef9"
+            },
         },
         "main": {
-            color: "orange",
-            shape: "diamond"
+            shape: "diamond",
+            color: {
+                background: "#7ba8ff",
+                border: "#595959"
+            },
         }
+    },
+    physics: {
+        "barnesHut": {
+            "centralGravity": 0.2,
+            "springConstant": 0.12
+        },
+        "minVelocity": 0.75
     }
 };
 
@@ -111,66 +98,73 @@ const netNodes =  window.netNodes = network.nodesHandler.body.nodes; //htmlcolle
 
 network.redraw();
 
-//network.focus("3", {scale: 1.5})
-// netNodes['0'].x = -container.clientWidth/2
-// netNodes[netNodes.length-1].x = container.clientWidth/2
+const metaText = document.getElementById("metadata")
 
-const metaText = document.getElementById("metaData")
+let zoomInCount =0;
+let zoomOutCount =0;
 
-let detailedView = false;
+const minorNodes = myNodes.filter(m => !mainIDs.includes(m.id) );
+minorNodes.map(m => m.group = "minor");
+
+let minorCopy = minorNodes.slice();
+let minorsInside = [];
+
+console.log("minor  ", minorNodes);
 
 network.on('zoom', function(event){
-    if ( !detailedView && event.direction === "+" && network.getScale() > 2) {
-        // const scale = network.getScale();
-        // const position = network.storePositions();
-        // network.setOptions({autoResize: false})
-        // network.setData({nodes: myNodes, edges: links})
-
-
-        const leftOverNodes = myNodes.filter(n => mainN.get(n.id) === null)
-        console.log("leftover", leftOverNodes)
-        leftOverNodes.forEach(n => {
-            console.log("NNN",n)
-            mainN.add(n)
-        })
-
-        detailedView = true;
-        // network.moveTo({scale: 2, position, animation: {duration: 1500}})
-
+    if (event.direction === "+" && network.getScale() > 0.8) {
+        zoomInCount++;
+        if (zoomInCount % 5 === 0 && minorNodes.length > 1) {
+            const minor = minorCopy.pop();
+            if (typeof minor === "object") {
+                minorsInside.push(minor);
+                mainN.add(minor)
+            }
+        }
     }
-    // else if ( detailedView && event.direction === "-" && network.getScale()< 0.5){
-    //     const scale = network.getScale();
-    //     const position = network.storePositions();
-    //     network.setData({nodes: mainN, edges: links})
-    //     detailedView = false;
-    //     network.moveTo({scale: 2, position, animation: {duration: 1500}})
-    // }
+    else if (event.direction === "-" && network.getScale() < 1){
+        zoomOutCount++;
+        if (zoomOutCount % 3 === 0) {
+            //remove node and put in memory for adding it later
+            const minor = minorsInside.pop();
+            if (typeof minor === "object") {
+                minorCopy.push(minor)
+                mainN.remove(minor.id)
+            }
+        }
+    }
 })
 
-// network.on('click', function(event){
-//     const id = event.nodes[0];
-//
-//     //go from the clickedNode to the actual node in Data
-//     const node = getObjByProp(dat.nodes, "uuid", id)[0]
-//     console.log(node)
-//
-//     //get the contents the node is pointing to
-//     const contents = getObjByProp(dat.allContents, "uuid", node.contents)
-//     if (contents.length < 1) {
-//         contents[0] = "no content"
-//     }
-//     console.log(contents)
-//
-//     //display contents on the right of the graph
-//     const titles = contents.map(c => c.title)
-//     metaText.innerHTML = makeDiv(titles)
-// });
+network.on('click', function(event){
+    const id = event.nodes[0];
 
-//split Data
-    //main nodes
-    //secondary nodes (group 2) --> their own css
+    if (!id) {return}
+    //go from the clickedNode to the actual node in Data
+    const node = getObjByProp(DATA.nodes, "uuid", id)[0]
+    console.log('node  ', node)
+    metaText.childNodes.forEach(c => {
+        metaText.innerHTML = ""
+    })
+    //get the contents the node is pointing to
+    if (node.metadata) {
+        if (node.metadata.contents) {
+            const contents = node.metadata.contents
+            if (contents.length < 1) {
+                contents[0] = "no content"
+            }
+            console.log(contents)
 
-//if zoom
-    //network.setData(more nodes)
+            //display contents on the right of the graph
+            const titles = contents.map(c => c.title)
 
+
+            titles.forEach(t => {
+                const button = document.createElement('button');
+                button.classList.add("buttonX");
+                button.textContent = t;
+                metaText.appendChild(button)})
+        }
+    }
+
+});
 

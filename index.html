@@ -7,47 +7,117 @@
     <meta http-equiv="X-UA-Compatible" content="ie=edge">
     <title>Document</title>
 </head>
-<title>Network | Groups</title>
 <body>
-<section id="flex">
-    <div id="container"></div>
-    <div id="metaData">
-        <div>
-        A
-        </div>
-        <div>
-            B
-        </div>
+<title>Network | Groups</title>
+<section id="flexer">
+    <div id="xpHeader"><span>
+        EXPERIENCES
+    </span></div>
+
+    <div id="metadata">
+        <button class="buttonX">A</button>
+        <button class="buttonX">B</button>
     </div>
 </section>
+
+<div id="container"></div>
+
 </body>
 
 <style>
-    #flex {
+    html, body {
+        overflow: hidden;
+        margin:0
+    }
+    #flexer {
         display: flex;
         flex-direction: row;
     }
-    #metaData {
-        background: cornflowerblue;
-        color: white;
-        max-width: 20vw;
-        min-width: 20vw;
+    #xpHeader {
+        /*background: #ff6e40;*/
+        color: #ffe8e8;
+        background: #333333;
+        min-width:20vw;
+        font-weight:bold;
+        align-content: center;
+        justify-content: center;
         text-align: center;
-        position: absolute;
+        padding:0.2rem;
         display:flex;
-        flex-direction: column;
+
     }
-    body {
-        color: #d3d3d3;
-        font: 12pt arial;
-        background-color: #222222;
+    #xpHeader > * {
+        align-self:center;
+    }
+    #metadata {
+        padding: 0.5rem;
+        /*position: absolute;*/
+        font-weight: bold;
+        display: flex;
+        /*position: absolute;*/
+        align-items: center;
+        flex-direction: row;
+        min-width: 80vw;
+        justify-content: start;
+        background: #ed6b4f;
+        text-align: center;
+    }
+    #metadata > * {
+        margin-left: 2rem;
+    }
+
+    .buttonX {
+        /*padding-top: 0.5rem;*/
+        /*margin-bottom: 0.3rem;*/
+        /*min-height: 5vh;*/
+        /*width: 10rem;*/
+        font-weight: bold;
+        background-color: yellow;
+        /*height: 1.5rem;*/
+        font-family: 'Roboto', sans-serif;
+        font-size: 14px;
+        text-transform: uppercase;
+        /*letter-spacing: 2.5px;*/
+        color: #595959;
+        border: none;
+        border-radius: 4px;
+        box-shadow: 0px 8px 15px rgba(0, 0, 0, 0.1);
+        transition: all 0.3s ease 0s;
+        cursor: pointer;
+        outline: none;
+        min-height: 1.2rem;
+    }
+
+    .buttonX:hover {
+        background-color: #2EE59D;
+        box-shadow: 0px 15px 20px rgba(46, 229, 157, 0.4);
+        color: #fff;
+        transform: translateY(-7px);
     }
     #container {
         width: 100vw;
-        height: 100vh;
-        border: 1px solid #444444;
-        background-color: #222222;
+        height: 93vh;
+        /*background-color: #222222;*/
     }
+
+    /*#metaData {*/
+        /*background: cornflowerblue;*/
+        /*color: white;*/
+        /*max-width: 20vw;*/
+        /*min-width: 20vw;*/
+        /*text-align: center;*/
+        /*position: absolute;*/
+        /*display:flex;*/
+        /*flex-direction: column;*/
+        /*box-shadow: #4c4c4c;*/
+    /*}*/
+    body {
+        max-height:100vh;
+        /*overflow:hidden;*/
+        background-color: #faffd3;
+        font: 12pt arial;
+    }
+
 </style>
 <script src="./index.js"></script>
 <link rel="stylesheet" href="style.css">

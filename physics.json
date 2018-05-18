@@ -3,11 +3,29 @@
     "nodes": [
       {
         "uuid": "derivative",
-        "concept": "derivative"
+        "concept": "derivative",
+        "metadata": {
+          "contents": [
+            {
+              "uuid": "content_1",
+              "title": "Angular Ladida",
+              "summary": "Create your own skatepark while learning angular momentum"
+            }
+          ]
+        }
       },
       {
         "uuid": "vectors",
-        "concept": "vectors"
+        "concept": "vectors",
+        "metadata": {
+          "contents": [
+            {
+              "uuid": "vector_content_1",
+              "title": "vectors JAJA",
+              "summary": "LROIAD MSD ASDASLKDJA LSD ASD SDaS d"
+            }
+          ]
+        }
       },
       {
         "uuid": "position (r)",
@@ -19,7 +37,21 @@
       },
       {
         "uuid": "velocity",
-        "concept": "velocity"
+        "concept": "velocity",
+        "metadata": {
+          "contents": [
+            {
+              "uuid": "veloccccccc_1010",
+              "title": "JAB JIB VELOCITY",
+              "summary": "KADASDSAD SD SDaS d"
+            },
+            {
+              "uuid": "velocity_123",
+              "title": "RAPTORS EVERYWHERE",
+              "summary": "Camels drink much water etc"
+            }
+          ]
+        }
       },
       {
         "uuid": "speed",
