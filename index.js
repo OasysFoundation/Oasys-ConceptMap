@@ -8,6 +8,31 @@ const DATA = graphData.data;
 console.log(DATA.nodes);
 let myNodes = formatNodes(DATA.nodes);
 
+var updatedJSON = {"test": 80};
+// @markus
+var id = '5afd1f6666f40f710d14c85e'
+
+
+var urlLoad = 'http://174.138.2.82/loadEditor';
+var urlUpdate = 'http://174.138.2.82/updateEditor';
+
+fetch(urlLoad, {
+    method: 'GET',
+    headers: new Headers({
+        'id': id
+    })
+}).then(function(response) {
+    console.log(response);
+    return response.json();
+})
+    .then(function(myJson) {
+        console.log(myJson);
+    })
+
+
+
+
+
 //dirty hack to have textPadding
 myNodes.forEach(m => {
     m.label = " " + m.label + " "
@@ -15,8 +40,48 @@ myNodes.forEach(m => {
 
 const links = DATA.links;
 const hasInOut = function(nodeId, links) {
-    return (links.filter(e => e.from == nodeId).length > 0 && links.filter(e=> e.to==nodeId).length > 0)
+    return (links.filter(e => e.from === nodeId).length > 0 && links.filter(e=> e.to === nodeId).length > 0)
 }
+
+window.myNodes = myNodes;
+
+
+const setChildren = function(node, links, nodes) {
+    node.to = [];
+    //logic: if my father is the node then you're the node's child
+    links.forEach(l => {
+        if (l.from === node.id) {
+         //get Ids first
+            node.to.push(l.to)
+        }
+    });
+    //get node from nodeId
+    node.to = node.to.map(n => {
+        const x = nodes.filter(e => e.id === n)[0];
+        return x;
+    })
+};
+
+//set .to from all nodes
+myNodes.forEach(m => setChildren(m, links, myNodes));
+
+//count longest branches recursively
+const calcHeight = function(node, length, values = []) {
+    //if node is a Leaf
+    if (!node.to.length) {
+        return length;
+    }
+    else {
+        //get number of children
+        const l = length+1;
+        node.to.forEach(n => values.push(calcHeight(n, l)));
+        // values = values.filter(v => !isNaN(v))
+        console.log("val   ", values)
+        return Math.max(...values)
+    }
+};
+
+myNodes.forEach(n => n.height = calcHeight(n, 0));
 
 const mainNodes = myNodes.filter(n => hasInOut(n.id, links))
 //give them styling
@@ -27,9 +92,7 @@ const mainIDs = mainNodes.map(n => n.id);
 const mainN = window.mainN =  new DataSet(mainNodes)
 const edges = new DataSet(links)
 
-
 console.log("mainnodes   " , mainNodes);
-
 
 // create a network
 const container = document.getElementById('container');
@@ -81,6 +144,9 @@ const options = {
                 background: "#7ba8ff",
                 border: "#595959"
             },
+            fixed: {
+                x: true, y: true
+            }
         }
     },
     physics: {
@@ -96,6 +162,29 @@ let network = window.network = new Network(container, data, options);
 //place the start node on the left
 const netNodes =  window.netNodes = network.nodesHandler.body.nodes; //htmlcollection --> array
 
+window.mainNodes = mainNodes;
+const treeHeight = Math.max(...myNodes.map(n => n.height))
+const lowestHeight = Math.min(...myNodes.map(n=> n.height))
+
+const canvasWidth = 400; //as per visjs apparently
+const canvasHeight = 300; //as per visjs apparently
+
+const nodesPerHeight2D = [[]];
+
+for (let i = 0; i <= treeHeight; i++) {
+    nodesPerHeight2D.push(mainNodes.filter(n => n.height === i))
+};
+
+console.log('HEIEIEI ', nodesPerHeight2D )
+
+const xStep = canvasWidth/(treeHeight-lowestHeight);
+// mainNodes.forEach(n => network.moveNode(n.id, 200 - (canvasWidth/treeHeight) * n.height, 0)); //space out heighest --> most left
+nodesPerHeight2D.forEach(ar => ar.forEach((n, i) => {
+
+    const x = 200 - xStep * n.height * 2.5;
+    console.log("x  :", x);
+    network.moveNode(n.id, x, 150 - (canvasHeight/(ar.length+1) * i * 2)) //-140 + canvasHeight/((ar.length+1) * i+1)
+}));
 network.redraw();
 
 const metaText = document.getElementById("metadata")
@@ -111,8 +200,12 @@ let minorsInside = [];
 
 console.log("minor  ", minorNodes);
 
+
+//notes dependent on height
+
+
 network.on('zoom', function(event){
-    if (event.direction === "+" && network.getScale() > 0.8) {
+    if (event.direction === "+" && network.getScale() > 1.2) {
         zoomInCount++;
         if (zoomInCount % 5 === 0 && minorNodes.length > 1) {
             const minor = minorCopy.pop();
@@ -122,7 +215,7 @@ network.on('zoom', function(event){
             }
         }
     }
-    else if (event.direction === "-" && network.getScale() < 1){
+    else if (event.direction === "-" && network.getScale() < 1.35){
         zoomOutCount++;
         if (zoomOutCount % 3 === 0) {
             //remove node and put in memory for adding it later
@@ -156,8 +249,6 @@ network.on('click', function(event){
 
             //display contents on the right of the graph
             const titles = contents.map(c => c.title)
-
-
             titles.forEach(t => {
                 const button = document.createElement('button');
                 button.classList.add("buttonX");
